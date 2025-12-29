@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Santander Customer Transaction Prediction</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Santander Customer Transaction Prediction</h1>
+        <form id="predictionForm">
+            <div class="form-group">
+                <label for="ID_code">Customer ID:</label>
+                <input type="text" id="ID_code" name="ID_code" placeholder="Enter ID_code">
+            </div>
+
+            <div class="features">
+            <h3>Features (var_0 to var_199)</h3>
+            <div id="featuresContainer"></div>
+
+            <button type="submit">Predict</button>
+        </form>
+
+        <div id="result" class="result"></div>
+    </div>
+
+    <script>
+        // Dynamically create 200 input fields
+        const featuresContainer = document.getElementById('featuresContainer');
+        for (let i = 0; i < 200; i++) {
+            const div = document.createElement('div');
+            div.className = 'feature-input';
+            div.innerHTML = `
+                <label for="var_${i}">var_${i}:</label>
+                <input type="number" step="any" id="var_${i}" name="var_${i}" required>
+            `;
+            featuresContainer.appendChild(div);
+        }
+
+        // Handle form submission
+        document.getElementById('predictionForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const formData = new FormData();
+            for (let i = 0; i < 200; i++) {
+                const val = document.getElementById(`var_${i}`).value;
+                formData.append(`var_${i}`, val);
+            }
+            const idCode = document.getElementById('ID_code').value;
+            if (idCode) formData.append('ID_code', idCode);
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<p>Processing...</p>';
+
+            try {
+                const response = await fetch('/api/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+
+                if (data.error) {
+                    resultDiv.innerHTML = `<p class="error">Error: ${data.error}</p>`;
+                } else {
+                    const predText = data.prediction === 1
+                        ? 'Will do transaction'
+                        : 'Will not do transaction';
+                    resultDiv.innerHTML = `
+                        <h3>Prediction Result</h3>
+                        <p><strong>Customer ID:</strong> ${data.ID_code}</p>
+                        <p><strong>Prediction:</strong> ${predText}</p>
+                        <p><strong>Probability:</strong> ${data.probability}</p>
+                    `;
+                }
+            } catch (err) {
+                resultDiv.innerHTML = `<p class="error">Network error: ${err.message}</p>`;
+            }
+        });
+    </script>
+</body>
+</html>
