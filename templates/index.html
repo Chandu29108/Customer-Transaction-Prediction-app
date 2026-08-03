@@ -3,11 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <title>Santander Customer Transaction Prediction</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='CSS/style.css') }}">
 </head>
 <body>
     <div class="container">
         <h1>Santander Customer Transaction Prediction</h1>
+        <p style="text-align:center; color:#666;">
+            Predicts whether a customer will make a transaction from 200 anonymized numeric features.
+        </p>
+
         <form id="predictionForm">
             <div class="form-group">
                 <label for="ID_code">Customer ID:</label>
@@ -15,8 +19,10 @@
             </div>
 
             <div class="features">
-            <h3>Features (var_0 to var_199)</h3>
-            <div id="featuresContainer"></div>
+                <h3>Features (var_0 to var_{{ n_features - 1 }})</h3>
+                <button type="button" id="fillSampleBtn">Fill Random Sample Values</button>
+                <div id="featuresContainer"></div>
+            </div>
 
             <button type="submit">Predict</button>
         </form>
@@ -25,9 +31,10 @@
     </div>
 
     <script>
-        // Dynamically create 200 input fields
+        const N_FEATURES = {{ n_features }};
         const featuresContainer = document.getElementById('featuresContainer');
-        for (let i = 0; i < 200; i++) {
+
+        for (let i = 0; i < N_FEATURES; i++) {
             const div = document.createElement('div');
             div.className = 'feature-input';
             div.innerHTML = `
@@ -37,17 +44,26 @@
             featuresContainer.appendChild(div);
         }
 
-        // Handle form submission
-        document.getElementById('predictionForm').addEventListener('submit', async function(e) {
+        // Demo convenience: fill all fields with random values in a
+        // realistic range so this can be tried without a real dataset row.
+        document.getElementById('fillSampleBtn').addEventListener('click', function () {
+            for (let i = 0; i < N_FEATURES; i++) {
+                const val = (Math.random() * 30 - 15).toFixed(4); // roughly matches feature scale
+                document.getElementById(`var_${i}`).value = val;
+            }
+        });
+
+        document.getElementById('predictionForm').addEventListener('submit', async function (e) {
             e.preventDefault();
 
             const formData = new FormData();
-            for (let i = 0; i < 200; i++) {
+            for (let i = 0; i < N_FEATURES; i++) {
                 const val = document.getElementById(`var_${i}`).value;
                 formData.append(`var_${i}`, val);
             }
             const idCode = document.getElementById('ID_code').value;
             if (idCode) formData.append('ID_code', idCode);
+
             const resultDiv = document.getElementById('result');
             resultDiv.innerHTML = '<p>Processing...</p>';
 
@@ -62,8 +78,8 @@
                     resultDiv.innerHTML = `<p class="error">Error: ${data.error}</p>`;
                 } else {
                     const predText = data.prediction === 1
-                        ? 'Will do transaction'
-                        : 'Will not do transaction';
+                        ? 'Will make a transaction'
+                        : 'Will not make a transaction';
                     resultDiv.innerHTML = `
                         <h3>Prediction Result</h3>
                         <p><strong>Customer ID:</strong> ${data.ID_code}</p>
