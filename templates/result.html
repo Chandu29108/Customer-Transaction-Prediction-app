@@ -1,20 +1,23 @@
-<meta charset="UTF-8">
-<title>Prediction Result</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Prediction Result</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='CSS/style.css') }}">
 </head>
 <body>
-<div class="container">
-    <h1>Prediction Result</h1>
-    <p><strong>Customer ID:</strong> {{ result.get('ID_code', 'unknown') }}</p>
-    <p><strong>Prediction:</strong>
-        {% if result.get('prediction') == 1 %}
-            Will do transaction
-        {% else %}
-            Will not do transaction
-        {% endif %}
-    </p>
-    <p><strong>Probability:</strong> {{ result.get('probability', 0) }}</p>
-    <a href="/">← Back to Form</a>
-</div>
+    <div class="container">
+        <h1>Prediction Result</h1>
+        <p><strong>Customer ID:</strong> {{ result.get('ID_code', 'unknown') }}</p>
+        <p><strong>Prediction:</strong>
+            {% if result.get('prediction') == 1 %}
+                Will make a transaction
+            {% else %}
+                Will not make a transaction
+            {% endif %}
+        </p>
+        <p><strong>Probability:</strong> {{ result.get('probability', 0) }}</p>
+        <a href="/">← Back to Form</a>
+    </div>
 </body>
 </html>
