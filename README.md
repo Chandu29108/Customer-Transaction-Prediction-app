@@ -1,0 +1,123 @@
+# Santander Customer Transaction Prediction
+
+Predicts whether a bank customer will make a specific type of transaction,
+using 200 anonymized numerical features (Santander Kaggle dataset, 200,000
+customers). Includes a trained ML pipeline (PCA + MLP) and a Flask web app /
+REST API for serving predictions.
+
+## Results
+
+| Model | Test Accuracy | Test F1 | Train Accuracy |
+|---|---|---|---|
+| Logistic Regression (+ Bagging) | 83.6% | — | 83.5% |
+| XGBoost | 90.5% | 90.6% | 93.7% |
+| **MLP (ANN) — best model** | **92.0%** | **92.6%** | 99.0% |
+
+MLP (`hidden_layer_sizes=(128, 32)`, ReLU, Adam) was selected as the final
+model and is what the Flask app serves.
+
+> **Note on methodology:** SMOTE oversampling was applied to the full dataset
+> *before* the train/test split, rather than fitting SMOTE on the training
+> set only. This means a small number of synthetic test samples may have
+> been generated using neighbors that ended up in the training set, which
+> likely makes the test scores somewhat optimistic versus a strictly
+> leak-free pipeline. A future revision should split first, then apply
+> SMOTE to the training fold only.
+
+## Overview
+
+The dataset contains 200,000 anonymized customer records with 200 numeric
+features (`var_0`–`var_199`) and a binary `target` (will the customer make a
+transaction). Feature names carry no domain meaning — this is a pure signal
+extraction problem, not a domain-knowledge one.
+
+Pipeline:
+1. **EDA**: checked skewness, distribution shape, and correlation across all
+   200 features — no missing values, no duplicates, no highly correlated
+   feature pairs found.
+2. **Class imbalance**: ~90% negative / ~10% positive target — corrected with
+   SMOTE oversampling.
+3. **Scaling**: `RobustScaler`, chosen for resilience to outliers while
+   preserving the near-normal shape of most features.
+4. **Dimensionality reduction**: PCA reduced from 200 → 175 components,
+   chosen from the explained-variance curve (minimal variance loss).
+5. **Modeling**: compared Logistic Regression (+ Bagging), XGBoost, and an
+   MLP classifier; MLP won on both accuracy and F1.
+6. **Serving**: trained pipeline (scaler, PCA, model) persisted with
+   `joblib` and served via a Flask app with both a REST API (Flask-RESTX,
+   Swagger docs) and a simple HTML form.
+
+## Project structure
+
+```
+Customer-Transaction-Prediction-app/
+├── app.py                  # Flask app: REST API + HTML routes
+├── main.ipynb              # Full EDA → preprocessing → modeling notebook
+├── templates/
+│   ├── index.html          # Prediction form
+│   └── result.html         # Server-rendered result view
+├── static/CSS/style.css
+├── models/                 # robust_scaler.pkl, pca.pkl, mlp_pipeline.pkl (generate via notebook)
+├── requirements.txt
+└── LICENSE
+```
+
+## Tech stack
+
+Python, scikit-learn, XGBoost, imbalanced-learn (SMOTE), Flask, Flask-RESTX,
+Flask-CORS, joblib, pandas, NumPy, Matplotlib/Seaborn.
+
+## How to run
+
+```bash
+pip install -r requirements.txt
+python app.py
+```
+
+The app starts on `http://localhost:5000`. Open it in a browser for the HTML
+form, or use the Swagger UI at `http://localhost:5000/` (Flask-RESTX) to call
+the REST endpoints directly.
+
+**Endpoints:**
+- `POST /api/predict` — form-encoded `var_0`...`var_174` (+ optional
+  `ID_code`) → JSON `{prediction, probability, ID_code}`. Used by the HTML
+  form via AJAX.
+- `POST /transaction_prediction/predict` — same prediction logic exposed as
+  a documented REST-X endpoint.
+- `POST /transaction_prediction/upload/` — upload a CSV of multiple
+  customer rows and get batch predictions back.
+
+You'll need the three trained artifacts in a `models/` folder for the app to
+start: `robust_scaler.pkl`, `pca.pkl`, `mlp_pipeline.pkl`. These are produced
+by running `main.ipynb` end-to-end (see the "MODEL SAVING" section of the
+notebook).
+
+## Known limitations
+
+- **SMOTE-before-split leakage** (see note above) — test metrics are likely
+  a bit optimistic.
+- **Feature count mismatch between form and API**: the HTML form
+  (`index.html`) currently generates 200 input fields (`var_0`–`var_199`),
+  but `api_predict()` in `app.py` only reads the first 175
+  (`var_0`–`var_174`); the remaining fields are silently ignored. This
+  should be fixed so the form only collects the 175 features the API
+  actually uses, or the API is updated to consume all 200 before scaling/PCA.
+- Feature columns are anonymized by the dataset provider, so no
+  domain-driven feature engineering was possible — all signal came from
+  statistical structure alone.
+- No live inference logging/monitoring; not yet hardened for production
+  traffic (single-process Flask dev server, `debug=True`).
+
+## Future work
+
+- Fix the form/API feature-count mismatch.
+- Refit SMOTE inside a proper train-only pipeline (e.g. `imblearn.Pipeline`)
+  to eliminate the leakage risk.
+- Add model explainability (SHAP) given the features are anonymized —
+  useful for understanding which principal components drive predictions.
+- Containerize (Docker) and swap the Flask dev server for a production WSGI
+  server (gunicorn/uwsgi) before any real deployment.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
