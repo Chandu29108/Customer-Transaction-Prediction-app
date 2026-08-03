@@ -102,3 +102,16 @@ a:hover {
     text-decoration: underline;
 }
 
+
+#fillSampleBtn {
+    background-color: #6c757d;
+    display: inline-block;
+    margin: 10px 0;
+    padding: 8px 14px;
+    font-size: 13px;
+}
+
+#fillSampleBtn:hover {
+    background-color: #5a6268;
+}
+
