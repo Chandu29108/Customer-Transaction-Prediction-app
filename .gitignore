@@ -1,5 +1,31 @@
-﻿models/
-**/*.pkl
-**/*.csv
+﻿# Byte-compiled / cache
 __pycache__/
+*.py[cod]
+*.pyc
+
+# Virtual environments
+venv/
+env/
 .venv/
+*venv*/
+*.egg-info/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Environment / secrets
+.env
+
+# Large raw dataset (download separately, see Data/README.md)
+Data/*.csv
+
+# Generated model artifacts (run src/train.py to regenerate, see models/README.md)
+models/*.pkl
